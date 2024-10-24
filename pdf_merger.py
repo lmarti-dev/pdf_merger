@@ -1,24 +1,32 @@
-from PyPDF2 import PdfMerger, PdfReader
+from PyPDF2 import PdfWriter, PdfReader
 import os
-import argparse
 import io
+import fire
+from pathlib import Path
 
-parser = argparse.ArgumentParser(description="Merge all pdf in folder.")
-parser.add_argument(
-    "-i",
-    "--input",
-    type=str,
-    help="The input folder.",
-)
 
-args = parser.parse_args()
+def merge_pdfs(dirname: str, filename: str = "document-output", password: str = None):
 
-dirname = args.input
+    pdf_files = os.listdir(dirname)
 
-filenames = os.listdir(dirname)
+    merger = PdfWriter()
+    for pdf_file in pdf_files:
+        if pdf_file.endswith(".pdf"):
+            merger.append(PdfReader(io.open(Path(dirname, pdf_file), "rb")))
+        else:
+            print(f"Skipping {pdf_file}")
 
-merger = PdfMerger()
-for filename in filenames:
-    merger.append(PdfReader(io.open(os.path.join(dirname, filename), "rb")))
+    if password is not None:
+        merger.encrypt(user_password=password, owner_password=password)
 
-merger.write(os.path.join(dirname, "document-output.pdf"))
+    if not filename.endswith(".pdf"):
+        filename += ".pdf"
+
+    fpath_out = Path(dirname, filename)
+    merger.write(fpath_out)
+
+    print(f"Wrote {fpath_out}")
+
+
+if __name__ == "__main__":
+    fire.Fire(merge_pdfs)
